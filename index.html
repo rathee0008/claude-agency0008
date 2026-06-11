@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Agency — AI Solutions Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08080F;
+  --surface:#0D0D1A;
+  --surface2:#12121F;
+  --border:#1C1C30;
+  --accent:#6C5CE7;
+  --accent-light:#9B8FF5;
+  --accent-glow:rgba(108,92,231,0.15);
+  --text-primary:#E4E4F0;
+  --text-secondary:#7878A0;
+  --text-muted:#46465A;
+  --success:#00C9A0;
+  --danger:#FF6B6B;
+  --f-display:'Syne',sans-serif;
+  --f-body:'Inter',sans-serif;
+  --f-mono:'JetBrains Mono',monospace;
+  --r:10px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text-primary);font-family:var(--f-body);font-size:14px;line-height:1.6;overflow:hidden}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px}
+.modal-overlay.hidden{display:none}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:44px 40px;width:100%;max-width:440px;text-align:center}
+.modal-badge{width:52px;height:52px;background:var(--accent-glow);border:1px solid var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;font-size:24px}
+.modal h1{font-family:var(--f-display);font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:10px}
+.modal h1 em{color:var(--accent-light);font-style:normal}
+.modal-sub{color:var(--text-secondary);font-size:13px;margin-bottom:32px;line-height:1.7}
+.modal-input{width:100%;padding:13px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text-primary);font-family:var(--f-mono);font-size:12px;letter-spacing:1px;outline:none;margin-bottom:14px;transition:border-color .2s}
+.modal-input:focus{border-color:var(--accent)}
+.btn-launch{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-family:var(--f-display);font-size:14px;font-weight:700;letter-spacing:.3px;cursor:pointer;transition:opacity .2s,transform .1s}
+.btn-launch:hover{opacity:.9}
+.btn-launch:active{transform:scale(.98)}
+.modal-note{font-size:11px;color:var(--text-muted);margin-top:14px;line-height:1.6}
+
+/* ── APP SHELL ── */
+.app{display:flex;flex-direction:column;height:100vh}
+.app.hidden{display:none}
+
+/* ── TOPBAR ── */
+.topbar{height:54px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 22px;gap:12px;flex-shrink:0}
+.topbar-logo{width:28px;height:28px;background:var(--accent-glow);border:1px solid var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.topbar-name{font-family:var(--f-display);font-size:15px;font-weight:700;letter-spacing:-.2px}
+.topbar-name em{color:var(--accent-light);font-style:normal}
+.topbar-pill{font-size:10px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 8px;letter-spacing:1px;text-transform:uppercase}
+.topbar-spacer{flex:1}
+.api-badge{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary);cursor:pointer;padding:5px 10px;border-radius:6px;border:1px solid var(--border);transition:border-color .2s}
+.api-badge:hover{border-color:var(--accent);color:var(--accent-light)}
+.api-dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 7px var(--success)}
+
+/* ── LAYOUT ── */
+.body{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:210px;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;padding:20px 0;flex-shrink:0;overflow-y:auto}
+.sidebar-label{font-size:10px;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;padding:0 18px;margin-bottom:6px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;cursor:pointer;border-left:2px solid transparent;transition:all .15s;color:var(--text-secondary);font-size:13px;font-weight:500;user-select:none}
+.nav-item:hover{background:var(--accent-glow);color:var(--text-primary);border-left-color:rgba(108,92,231,.5)}
+.nav-item.active{background:var(--accent-glow);color:var(--text-primary);border-left-color:var(--accent)}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.nav-count{margin-left:auto;font-size:10px;color:var(--text-muted);background:var(--surface2);border-radius:10px;padding:1px 6px;font-family:var(--f-mono)}
+.sidebar-divider{border:none;border-top:1px solid var(--border);margin:14px 18px}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;padding:28px 32px;display:flex;flex-direction:column;gap:24px}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
+/* ── SECTION HEADER ── */
+.section-header h2{font-family:var(--f-display);font-size:19px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
+.section-header p{color:var(--text-secondary);font-size:12.5px}
+
+/* ── TOOL GRID ── */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px}
+.tool-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:8px}
+.tool-card:hover{border-color:var(--accent);background:var(--accent-glow)}
+.tool-card.selected{border-color:var(--accent);background:var(--accent-glow)}
+.tc-icon{font-size:20px;line-height:1}
+.tc-name{font-family:var(--f-display);font-size:13px;font-weight:600}
+.tc-desc{font-size:11px;color:var(--text-secondary);line-height:1.5}
+
+/* ── TOOL PANEL ── */
+.tool-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:none}
+.tool-panel.show{display:block}
+.tp-header{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.tp-icon{width:30px;height:30px;background:var(--accent-glow);border:1px solid var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.tp-header h3{font-family:var(--f-display);font-size:14px;font-weight:600}
+.tp-body{padding:20px;display:flex;flex-direction:column;gap:15px}
+
+/* ── FIELDS ── */
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text-secondary)}
+.field input,.field textarea,.field select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text-primary);font-family:var(--f-body);font-size:13px;outline:none;transition:border-color .2s;resize:vertical}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
+.field textarea{min-height:78px;line-height:1.6}
+.field select option{background:var(--surface2)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ── GENERATE BTN ── */
+.btn-gen{padding:11px 22px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-family:var(--f-display);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.3px;display:flex;align-items:center;gap:8px;transition:opacity .2s,transform .1s;align-self:flex-start}
+.btn-gen:hover{opacity:.9}
+.btn-gen:active{transform:scale(.98)}
+.btn-gen:disabled{opacity:.45;cursor:not-allowed}
+.hint{font-size:10.5px;color:var(--text-muted);margin-top:-8px}
+
+/* ── OUTPUT ── */
+.output-panel{background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:none}
+.output-panel.show{display:block}
+.op-header{padding:9px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.op-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted)}
+.btn-copy{font-size:11px;color:var(--text-secondary);background:transparent;border:1px solid var(--border);border-radius:5px;padding:3px 10px;cursor:pointer;transition:all .2s;font-family:var(--f-body)}
+.btn-copy:hover{border-color:var(--accent);color:var(--accent-light)}
+.btn-copy.ok{border-color:var(--success);color:var(--success)}
+.op-content{padding:16px;font-family:var(--f-mono);font-size:12px;line-height:1.85;color:var(--text-primary);white-space:pre-wrap;min-height:90px;max-height:380px;overflow-y:auto}
+.op-footer{padding:7px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--text-muted);font-family:var(--f-mono)}
+.loading-row{display:flex;align-items:center;gap:10px;color:var(--text-secondary);font-family:var(--f-body);font-size:13px;padding:16px}
+
+/* Spinner */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+
+/* ── MOBILE ── */
+@media(max-width:680px){
+  html,body{overflow:auto}
+  .app{height:auto;min-height:100vh}
+  .body{flex-direction:column;overflow:visible}
+  .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);flex-direction:row;flex-wrap:wrap;padding:8px 10px;gap:2px}
+  .nav-item{border-left:none;border-bottom:2px solid transparent;padding:7px 10px;font-size:12px}
+  .nav-item.active{border-left-color:transparent;border-bottom-color:var(--accent)}
+  .nav-count,.sidebar-label,.sidebar-divider{display:none}
+  .main{padding:16px;overflow:visible}
+  .tool-grid{grid-template-columns:1fr 1fr}
+  .field-row{grid-template-columns:1fr}
+  .modal{padding:28px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-badge">⚡</div>
+    <h1>Claude <em>Agency</em></h1>
+    <p class="modal-sub">12 AI-powered tools across content, email, business reports, and research. Enter your Anthropic API key to start.</p>
+    <input class="modal-input" type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off">
+    <button class="btn-launch" onclick="launch()">Launch Agency →</button>
+    <p class="modal-note">Key is stored in your browser session only — never on any server. Requests go directly to api.anthropic.com.</p>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div class="app hidden" id="app">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-logo">⚡</div>
+    <div class="topbar-name">Claude <em>Agency</em></div>
+    <div class="topbar-pill">AI Solutions</div>
+    <div class="topbar-spacer"></div>
+    <div class="api-badge" onclick="logout()" title="Click to change key">
+      <div class="api-dot"></div>
+      API Connected
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-label">Solutions</div>
+      <div class="nav-item active" data-cat="content" onclick="switchCat('content')">
+        <span class="nav-icon">✍️</span>Content &amp; Social<span class="nav-count">3</span>
+      </div>
+      <div class="nav-item" data-cat="email" onclick="switchCat('email')">
+        <span class="nav-icon">📧</span>Email &amp; Comms<span class="nav-count">3</span>
+      </div>
+      <div class="nav-item" data-cat="esg" onclick="switchCat('esg')">
+        <span class="nav-icon">📊</span>Business &amp; ESG<span class="nav-count">3</span>
+      </div>
+      <div class="nav-item" data-cat="research" onclick="switchCat('research')">
+        <span class="nav-icon">🔬</span>Research &amp; Summary<span class="nav-count">3</span>
+      </div>
+      <hr class="sidebar-divider">
+      <div class="sidebar-label">Account</div>
+      <div class="nav-item" onclick="logout()">
+        <span class="nav-icon">🔑</span>Change API Key
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main" id="mainPanel"></div>
+
+  </div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+
+const CATS = {
+  content: {
+    label: 'Content & Social Media',
+    desc: 'Captions, scripts, and threads engineered to stop scrolling and drive engagement.',
+    tools: [
+      {
+        id:'insta',icon:'📸',name:'Instagram Caption',desc:'Hook + body + hashtags for any post',
+        fields:[
+          {id:'topic',label:'Topic / Scene / Product',type:'text',ph:'e.g. Post-workout meal, powerlifting PR, gym motivation'},
+          {id:'tone',label:'Tone',type:'select',opts:['Motivational','Aesthetic / Moody','Witty & Relatable','Educational','Personal Story']},
+          {id:'niche',label:'Niche / Audience',type:'text',ph:'e.g. Fitness, Finance, AI & Tech, Lifestyle'}
+        ],
+        sys:`You are a top Instagram content strategist. Write a complete, high-performing Instagram caption. Include: (1) a strong first-line hook that stops scrolling, (2) 3–4 lines of body copy, (3) a call to action, and (4) a block of 15–20 targeted hashtags. Use line breaks for readability. Match the tone exactly. No markdown formatting.`,
+        prompt:f=>`Topic: ${f.topic}\nTone: ${f.tone}\nNiche/Audience: ${f.niche}\n\nWrite the complete Instagram caption.`
+      },
+      {
+        id:'yt',icon:'🎬',name:'YouTube Intro Script',desc:'60-second hook + intro for any video',
+        fields:[
+          {id:'title',label:'Video Title / Topic',type:'text',ph:'e.g. How I built ₹5L passive income with ETFs'},
+          {id:'channel',label:'Channel Niche',type:'text',ph:'e.g. Personal Finance, Gym Lifestyle, AI & Tech'},
+          {id:'style',label:'Style',type:'select',opts:['High Energy','Educational','Story-Driven','Pattern Interrupt / Shock','Conversational']}
+        ],
+        sys:`You are a YouTube scriptwriter who specializes in maximizing viewer retention. Write a hook (first 5 seconds — pattern interrupt, bold statement, or question) followed by a 60-second intro that states the video's value proposition clearly. Include [stage directions in brackets]. Format with two sections: ## HOOK and ## INTRO. Keep it punchy and natural — no generic "hey guys welcome back".`,
+        prompt:f=>`Video: ${f.title}\nChannel: ${f.channel}\nStyle: ${f.style}\n\nWrite the hook and intro script.`
+      },
+      {
+        id:'thread',icon:'🧵',name:'X / Twitter Thread',desc:'6-tweet viral thread on any topic',
+        fields:[
+          {id:'topic',label:'Thread Topic',type:'text',ph:'e.g. Things nobody tells you about building muscle'},
+          {id:'angle',label:'Angle / Hook Type',type:'select',opts:['Contrarian Take','Personal Story','Data-Driven','Step-by-Step Guide','Hot Take']},
+          {id:'cta',label:'End CTA Goal',type:'text',ph:'e.g. Follow for more, Visit my site, DM me for details'}
+        ],
+        sys:`You are a viral Twitter/X growth expert. Write a 6-tweet thread that gets retweeted. Tweet 1: Bold, curiosity-driven hook under 280 chars. Tweets 2–5: Clear, punchy insights — one idea each, no fluff. Tweet 6: Strong CTA + encourage repost. Label each clearly as [Tweet 1], [Tweet 2], etc. No hashtag spam. Write like a human, not a bot.`,
+        prompt:f=>`Topic: ${f.topic}\nAngle: ${f.angle}\nCTA: ${f.cta}\n\nWrite the 6-tweet thread.`
+      }
+    ]
+  },
+  email: {
+    label: 'Email & Communication',
+    desc: 'Professional emails, smart replies, and cold outreach that get responses.',
+    tools: [
+      {
+        id:'proemail',icon:'📨',name:'Professional Email',desc:'Any business email with subject line',
+        fields:[
+          {id:'purpose',label:'Email Purpose',type:'text',ph:'e.g. Follow up on proposal, Request a meeting, Share update'},
+          {id:'recipient',label:'Recipient & Context',type:'text',ph:'e.g. Potential B2B client, CFO of a listed company, My manager'},
+          {id:'tone',label:'Tone',type:'select',opts:['Formal Professional','Friendly Business','Direct & Concise','Persuasive','Apologetic & Corrective']},
+          {id:'points',label:'Key Points to Cover',type:'textarea',ph:'Bullet notes on what the email must say...'}
+        ],
+        sys:`You are a business communication specialist. Write a complete, ready-to-send professional email. Include a subject line. The email should be clear, purposeful, and matched to the tone and recipient. Format: SUBJECT: [line]\n\n[email body]\n\n[sign-off]. No filler. Each paragraph must have a purpose.`,
+        prompt:f=>`Purpose: ${f.purpose}\nRecipient: ${f.recipient}\nTone: ${f.tone}\nKey points: ${f.points}\n\nWrite the email.`
+      },
+      {
+        id:'reply',icon:'↩️',name:'Email Reply',desc:'Smart reply to any received message',
+        fields:[
+          {id:'original',label:'Original Email (paste here)',type:'textarea',ph:'Paste the email you received...'},
+          {id:'intent',label:'Your Response Intent',type:'text',ph:'e.g. Accept the meeting, Decline politely, Ask for clarification'},
+          {id:'tone',label:'Tone',type:'select',opts:['Formal','Friendly','Direct','Diplomatic','Appreciative']}
+        ],
+        sys:`You are a communication expert. Read the original email and write an appropriate, concise reply that fully addresses the sender's points and clearly communicates the response intent. End with a clear next step or closing. Keep it brief and professional.`,
+        prompt:f=>`Original email:\n${f.original}\n\nMy intent: ${f.intent}\nTone: ${f.tone}\n\nWrite my reply.`
+      },
+      {
+        id:'cold',icon:'🎯',name:'Cold Outreach Email',desc:'High-conversion B2B cold email',
+        fields:[
+          {id:'offer',label:'Your Product / Service',type:'text',ph:'e.g. AI automation agency, ESG compliance tool, SaaS platform'},
+          {id:'prospect',label:'Prospect Type',type:'text',ph:'e.g. CFO of a listed Indian company, D2C brand marketing head'},
+          {id:'pain',label:'Pain Point to Address',type:'text',ph:'e.g. Manual compliance reporting takes 200+ hours per year'},
+          {id:'cta',label:'Desired Next Step',type:'text',ph:'e.g. 15-min discovery call, Reply to this email'}
+        ],
+        sys:`You are a B2B sales expert. Write a cold email that actually gets replies. Formula: specific opener → pain point → solution (brief) → social proof hook → single CTA. Subject line: intriguing, under 65 chars, no spam words. Body: under 150 words. No fluff, no feature dumping. Format: SUBJECT: [line]\n\n[body]`,
+        prompt:f=>`Offer: ${f.offer}\nProspect: ${f.prospect}\nPain point: ${f.pain}\nDesired CTA: ${f.cta}\n\nWrite the cold email.`
+      }
+    ]
+  },
+  esg: {
+    label: 'Business & ESG Reports',
+    desc: 'BRSR sections, ESG summaries, and business proposals — ready to submit.',
+    tools: [
+      {
+        id:'brsr',icon:'📋',name:'BRSR Section Writer',desc:'Any BRSR section per SEBI format',
+        fields:[
+          {id:'company',label:'Company Name & Sector',type:'text',ph:'e.g. Infosys Ltd, IT Services sector'},
+          {id:'section',label:'BRSR Section',type:'select',opts:['Section A: General Disclosures','Section B: Management & Process Disclosures','Principle 1: Ethics & Transparency','Principle 3: Employee Wellbeing','Principle 4: Stakeholder Engagement','Principle 6: Environmental Responsibility','Principle 9: Consumer Responsibility','ESG Executive Summary']},
+          {id:'data',label:'Available Data / Metrics / Initiatives',type:'textarea',ph:'Paste available figures, programs, policies, or bullet notes...'}
+        ],
+        sys:`You are a SEBI BRSR (Business Responsibility and Sustainability Report) compliance expert. Write a professional, disclosure-ready section that meets SEBI's BRSR framework requirements for top-1000 listed companies. Use formal regulatory language. Insert placeholders like [XX%] or [FY2024 figure] where data is not available. Structure with proper headings matching the BRSR format. The output should require minimal editing before inclusion in an annual report.`,
+        prompt:f=>`Company: ${f.company}\nSection Required: ${f.section}\nAvailable data/notes: ${f.data}\n\nWrite this BRSR section.`
+      },
+      {
+        id:'esgsummary',icon:'🌿',name:'ESG Executive Summary',desc:'One-page ESG summary for stakeholders',
+        fields:[
+          {id:'company',label:'Company & Industry',type:'text',ph:'e.g. Tata Steel, Steel & Mining'},
+          {id:'initiatives',label:'Key ESG Initiatives & Highlights',type:'textarea',ph:'List major programs, targets, certifications, achievements...'},
+          {id:'audience',label:'Target Audience',type:'select',opts:['Board & Leadership','Investors & Analysts','SEBI / Regulators','Public & Media','Employees']}
+        ],
+        sys:`You are an ESG communications specialist. Write a compelling one-page ESG Executive Summary. Structure: Opening statement → E highlights → S highlights → G highlights → Forward-looking commitment. Tone: professional, credible, and aspirational. Use data placeholders [XX metric] where needed. Suitable for annual reports or investor decks. No hollow greenwashing language — be specific.`,
+        prompt:f=>`Company: ${f.company}\nInitiatives: ${f.initiatives}\nAudience: ${f.audience}\n\nWrite the ESG Executive Summary.`
+      },
+      {
+        id:'proposal',icon:'💼',name:'Business Proposal',desc:'Full proposal for any B2B service',
+        fields:[
+          {id:'service',label:'Your Service / Solution',type:'text',ph:'e.g. AI-powered BRSR compliance automation'},
+          {id:'client',label:'Target Client Type',type:'text',ph:'e.g. NSE-listed mid-cap company, Manufacturing group'},
+          {id:'problem',label:'Problem Being Solved',type:'text',ph:'e.g. 200+ hours wasted on manual BRSR filing, high error risk'},
+          {id:'deliverables',label:'Key Deliverables',type:'textarea',ph:'List what you will deliver to the client...'}
+        ],
+        sys:`You are a B2B business proposal writer. Write a crisp, compelling proposal that closes deals. Sections: Executive Summary → Problem Statement → Proposed Solution → Deliverables → Why Us → Engagement & Next Steps. Keep it outcome-focused. Use ₹ for pricing if referenced. Include placeholder [₹XX,000/month] if pricing is relevant. Length: 400–600 words. No padding.`,
+        prompt:f=>`Service: ${f.service}\nClient: ${f.client}\nProblem: ${f.problem}\nDeliverables: ${f.deliverables}\n\nWrite the business proposal.`
+      }
+    ]
+  },
+  research: {
+    label: 'Research & Summarization',
+    desc: 'Summarize documents, build research briefs, and compare competitors fast.',
+    tools: [
+      {
+        id:'summarize',icon:'📝',name:'Quick Summarizer',desc:'Turn any text into clear, sharp bullets',
+        fields:[
+          {id:'text',label:'Text to Summarize',type:'textarea',ph:'Paste article, report, notes, or any long-form content...'},
+          {id:'format',label:'Output Format',type:'select',opts:['5 key bullet points','10 detailed bullets','Executive paragraph (3–4 lines)','One-line TL;DR','Full structured summary with headers']},
+          {id:'focus',label:'Focus Area (optional)',type:'text',ph:'e.g. Financial implications, Action items, Key risks'}
+        ],
+        sys:`You are a research analyst expert at extracting maximum signal from information. Summarize with precision — preserve key facts, numbers, and conclusions. Cut all filler. Every sentence must add value. Write in active voice, direct language. Do not repeat the same point twice.`,
+        prompt:f=>`Text:\n${f.text}\n\nFormat: ${f.format}\nFocus: ${f.focus||'All key points'}\n\nSummarize this.`
+      },
+      {
+        id:'brief',icon:'🔍',name:'Research Brief',desc:'Structured brief on any topic',
+        fields:[
+          {id:'topic',label:'Research Topic',type:'text',ph:'e.g. Silver ETF market in India, SEBI BRSR mandate 2024–25'},
+          {id:'depth',label:'Depth Level',type:'select',opts:['Overview — beginner friendly','Intermediate — informed reader','Expert — technical & detailed']},
+          {id:'sections',label:'Required Sections (optional)',type:'text',ph:'e.g. Background, Key players, Risks, Opportunities — or leave blank'}
+        ],
+        sys:`You are a senior research analyst. Write a comprehensive, well-structured research brief. Default sections: Background & Context, Current State & Key Facts, Major Players/Stakeholders, Risks & Challenges, Opportunities & Outlook. Clearly distinguish facts from analysis. Use bullet points for dense information. Headers should be bold and descriptive. Depth and technical detail should match the level specified.`,
+        prompt:f=>`Topic: ${f.topic}\nDepth: ${f.depth}\nSections: ${f.sections||'Use default structure'}\n\nWrite the research brief.`
+      },
+      {
+        id:'compete',icon:'⚔️',name:'Competitor Analysis',desc:'Compare any two products, firms, or approaches',
+        fields:[
+          {id:'yours',label:'Your Product / Approach',type:'text',ph:'e.g. AI-powered ESG compliance automation service'},
+          {id:'comp',label:'Competitor / Alternative',type:'text',ph:'e.g. Traditional CA firms doing manual compliance'},
+          {id:'dims',label:'Comparison Dimensions',type:'text',ph:'e.g. Cost, Speed, Accuracy, Scalability — or leave blank'},
+          {id:'context',label:'Market Context',type:'text',ph:'e.g. India, listed companies, SEBI BRSR mandate'}
+        ],
+        sys:`You are a strategic market analyst. Write a clear competitive analysis. Structure: Brief overview → Side-by-side comparison table (text-formatted for readability) → Strengths of each → Key differentiator → Strategic recommendation. Be balanced, factual, and sharp. Conclude with a decisive perspective on positioning.`,
+        prompt:f=>`Mine: ${f.yours}\nCompetitor: ${f.comp}\nDimensions: ${f.dims||'Cost, Speed, Quality, Scalability, Trust'}\nContext: ${f.context}\n\nWrite the competitor analysis.`
+      }
+    ]
+  }
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let apiKey = sessionStorage.getItem('_cagency_key') || '';
+let activeCat = 'content';
+let activeTool = null;
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  if (apiKey) showApp();
+};
+
+function showApp() {
+  document.getElementById('modalOverlay').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  renderCat('content');
+}
+
+function launch() {
+  const k = document.getElementById('apiKeyInput').value.trim();
+  if (!k.startsWith('sk-ant-')) {
+    const el = document.getElementById('apiKeyInput');
+    el.style.borderColor = 'var(--danger)';
+    el.placeholder = '⚠ Must start with sk-ant-';
+    setTimeout(() => { el.style.borderColor=''; el.placeholder='sk-ant-api03-...'; }, 2500);
+    return;
+  }
+  apiKey = k;
+  sessionStorage.setItem('_cagency_key', k);
+  showApp();
+}
+
+function logout() {
+  apiKey = '';
+  sessionStorage.removeItem('_cagency_key');
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('modalOverlay').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function switchCat(cat) {
+  activeCat = cat;
+  activeTool = null;
+  document.querySelectorAll('.nav-item[data-cat]').forEach(el =>
+    el.classList.toggle('active', el.dataset.cat === cat));
+  renderCat(cat);
+}
+
+function renderCat(cat) {
+  const d = CATS[cat];
+  document.getElementById('mainPanel').innerHTML = `
+    <div class="section-header">
+      <h2>${d.label}</h2>
+      <p>${d.desc}</p>
+    </div>
+    <div class="tool-grid">
+      ${d.tools.map(t => `
+        <div class="tool-card" id="tc-${t.id}" onclick="selectTool('${cat}','${t.id}')">
+          <div class="tc-icon">${t.icon}</div>
+          <div class="tc-name">${t.name}</div>
+          <div class="tc-desc">${t.desc}</div>
+        </div>`).join('')}
+    </div>
+    <div class="tool-panel" id="toolPanel"></div>`;
+}
+
+function selectTool(cat, id) {
+  const tool = CATS[cat].tools.find(t => t.id === id);
+  if (!tool) return;
+  activeTool = tool;
+
+  document.querySelectorAll('.tool-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`tc-${id}`).classList.add('selected');
+
+  const panel = document.getElementById('toolPanel');
+  panel.className = 'tool-panel show';
+  panel.innerHTML = `
+    <div class="tp-header">
+      <div class="tp-icon">${tool.icon}</div>
+      <h3>${tool.name}</h3>
+    </div>
+    <div class="tp-body">
+      ${tool.fields.map(f => renderField(f)).join('')}
+      <div>
+        <button class="btn-gen" id="genBtn" onclick="generate('${cat}','${id}')">
+          <span id="genIcon">⚡</span><span id="genText">Generate</span>
+        </button>
+        <p class="hint" style="margin-top:6px">Tip: Ctrl+Enter to generate</p>
+      </div>
+      <div class="output-panel" id="outPanel">
+        <div class="op-header">
+          <span class="op-label">Output</span>
+          <button class="btn-copy" id="copyBtn" onclick="copyOut()">Copy</button>
+        </div>
+        <div id="outContent"></div>
+        <div class="op-footer" id="outFooter"></div>
+      </div>
+    </div>`;
+
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function renderField(f) {
+  if (f.type === 'select') return `
+    <div class="field"><label>${f.label}</label>
+    <select id="f-${f.id}">${f.opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
+  if (f.type === 'textarea') return `
+    <div class="field"><label>${f.label}</label>
+    <textarea id="f-${f.id}" placeholder="${f.ph||''}"></textarea></div>`;
+  return `
+    <div class="field"><label>${f.label}</label>
+    <input type="text" id="f-${f.id}" placeholder="${f.ph||''}"></div>`;
+}
+
+// ── GENERATE ─────────────────────────────────────────────────────────────────
+async function generate(cat, id) {
+  const tool = CATS[cat].tools.find(t => t.id === id);
+  const vals = {};
+  for (const f of tool.fields) {
+    const el = document.getElementById(`f-${f.id}`);
+    vals[f.id] = el ? el.value.trim() : '';
+  }
+
+  // Validate first field
+  const first = tool.fields[0];
+  if (!vals[first.id]) {
+    const el = document.getElementById(`f-${first.id}`);
+    el.style.borderColor = 'var(--danger)';
+    el.focus();
+    setTimeout(() => el.style.borderColor = '', 2200);
+    return;
+  }
+
+  const btn = document.getElementById('genBtn');
+  const outPanel = document.getElementById('outPanel');
+  const outContent = document.getElementById('outContent');
+  const outFooter = document.getElementById('outFooter');
+
+  btn.disabled = true;
+  document.getElementById('genText').textContent = 'Generating...';
+  document.getElementById('genIcon').textContent = '⏳';
+  outPanel.className = 'output-panel show';
+  outContent.innerHTML = `<div class="loading-row"><div class="spinner"></div>Claude is working on this…</div>`;
+  outFooter.textContent = '';
+
+  const t0 = Date.now();
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        system: tool.sys,
+        messages: [{ role:'user', content: tool.prompt(vals) }]
+      })
+    });
+    if (!res.ok) {
+      const e = await res.json();
+      throw new Error(e.error?.message || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '(empty response)';
+    const elapsed = ((Date.now()-t0)/1000).toFixed(1);
+    const tok = data.usage?.output_tokens || '—';
+    outContent.innerHTML = `<div class="op-content">${escHtml(text)}</div>`;
+    outFooter.textContent = `${tok} tokens · ${elapsed}s · claude-sonnet-4`;
+  } catch (err) {
+    outContent.innerHTML = `<div class="op-content" style="color:var(--danger)">Error: ${escHtml(err.message)}\n\nCheck your API key and try again.</div>`;
+  }
+
+  btn.disabled = false;
+  document.getElementById('genText').textContent = 'Generate';
+  document.getElementById('genIcon').textContent = '⚡';
+}
+
+function copyOut() {
+  const el = document.querySelector('#outContent .op-content');
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ Copied';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.textContent='Copy'; btn.classList.remove('ok'); }, 2000);
+  });
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Ctrl+Enter shortcut
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter' && activeTool) {
+    const cat = Object.keys(CATS).find(k => CATS[k].tools.some(t=>t.id===activeTool.id));
+    if (cat) generate(cat, activeTool.id);
+  }
+});
+
+// Enter on modal input
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') launch();
+  });
+});
+</script>
+</body>
+</html>
